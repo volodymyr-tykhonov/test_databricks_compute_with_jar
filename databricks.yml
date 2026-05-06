@@ -1,0 +1,45 @@
+# This is a Databricks asset bundle definition for my_test_bundle.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: my_test_bundle
+  uuid: 1cdde303-f9e2-4941-84ba-7f8b37fca341
+
+include:
+  - resources/test_uc_access.job.yml
+
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+  volume:
+    description: The volume to use for access test
+
+workspace:
+  # Override with your workspace URL or set DATABRICKS_HOST env var
+  #host: ${DATABRICKS_HOST}
+  # DAB uploads artifacts (JAR) under this root.
+  artifact_path: ${var.volume_base}/libs
+
+artifacts:
+  default:
+    type: jar
+    build: sbt package && sbt assembly
+    path: .
+    files:
+      - source: ./target/scala-2.13/my_test_bundle-assembly-0.1.jar
+
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      catalog: my_catalog
+      schema: my_schema
+      volume: my_volume
+    workspace:
+      root_path: /Users/${workspace.current_user.userName}/.bundle/${bundle.name}/dev
+      artifact_path: /Volumes/${var.catalog}/${var.schema}/${var.volume}/libs/${workspace.current_user.short_name}
+
+
+

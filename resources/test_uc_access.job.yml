@@ -1,0 +1,37 @@
+
+
+resources:
+  jobs:
+    my_test_bundle:
+      name: "Test UC Access via different compute types"
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: volume
+          default: ${var.volume}
+      tasks:
+        - task_key: main_task
+          spark_jar_task:
+            main_class_name: com.examples.Main
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+              - "--volume"
+              - "{{job.parameters.volume}}"
+              - "--table-name"
+              - "tmp_table_serverless"
+              - "--folder-name"
+              - "tmp_folder_serverless"
+              - "--test-rdd"
+              - "false"
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+            java_dependencies:
+              - "${workspace.artifact_path}/.internal/my_test_bundle-assembly-0.1.jar"
