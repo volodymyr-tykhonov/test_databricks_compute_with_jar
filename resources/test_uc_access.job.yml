@@ -12,7 +12,7 @@ resources:
         - name: volume
           default: ${var.volume}
       tasks:
-        - task_key: main_task
+        - task_key: serverless_task
           spark_jar_task:
             main_class_name: com.examples.Main
             parameters:
@@ -29,6 +29,66 @@ resources:
               - "--test-rdd"
               - "false"
           environment_key: default
+
+        - task_key: job_cluster_standard
+          job_cluster_key: standard_cluster
+          spark_jar_task:
+            main_class_name: com.examples.Main
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+              - "--volume"
+              - "{{job.parameters.volume}}"
+              - "--table-name"
+              - "tmp_table_standard"
+              - "--folder-name"
+              - "tmp_folder_standard"
+              - "--test-rdd"
+              - "false"
+          libraries:
+            - jar: "${workspace.artifact_path}/.internal/my_test_bundle-assembly-0.1.jar"
+
+        - task_key: job_cluster_dedicated
+          job_cluster_key: dedicated_cluster
+          spark_jar_task:
+            main_class_name: com.examples.Main
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+              - "--volume"
+              - "{{job.parameters.volume}}"
+              - "--table-name"
+              - "tmp_table_dedicated"
+              - "--folder-name"
+              - "tmp_folder_dedicated"
+              - "--test-rdd"
+              - "true"
+          libraries:
+            - jar: "${workspace.artifact_path}/.internal/my_test_bundle-assembly-0.1.jar"
+
+      job_clusters:
+        - job_cluster_key: standard_cluster
+          new_cluster:
+            spark_version: "17.3.x-scala2.13"
+            node_type_id: "i4i.large"
+            driver_node_type_id: "i4i.large"
+            num_workers: 1
+            data_security_mode: "DATA_SECURITY_MODE_STANDARD"
+            runtime_engine: "STANDARD"
+
+        - job_cluster_key: dedicated_cluster
+          new_cluster:
+            spark_version: "17.3.x-scala2.13"
+            node_type_id: "i4i.large"
+            driver_node_type_id: "i4i.large"
+            num_workers: 1
+            data_security_mode: "DATA_SECURITY_MODE_DEDICATED"
+            runtime_engine: "STANDARD"
+
       environments:
         - environment_key: default
           spec:
