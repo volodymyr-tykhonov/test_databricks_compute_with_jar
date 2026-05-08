@@ -12,7 +12,12 @@ object Main {
   def main(args: Array[String]): Unit = {
     println("Starting the testing")
 
-    val spark = getSession()
+    val optCatalogName = getFromArgs(args, "catalog")
+    val isServerless = 
+      getFromArgs(args, "table-name").contains("serverless") ||
+      getFromArgs(args, "folder-name").contains("serverless")
+    val spark = getSession(optCatalogName, isServerless)
+
 
 
     // test writing to a table in the current catalog and schema, which should work both on serverless and cluster
@@ -24,7 +29,7 @@ object Main {
 
     // test reading from a table in the current catalog and schema and persisting to a volume, which should work both on serverless and cluster
     val optVolume = for {
-      catalog <- getFromArgs(args, "catalog")
+      catalog <- optCatalogName
       schema <- getFromArgs(args, "schema")
       volume <- getFromArgs(args, "volume")
     } yield {
@@ -91,7 +96,24 @@ object Main {
     }
   }
 
-  def getSession(): SparkSession = {
-    SparkSession.builder().getOrCreate()
+  def getSession(optCatalogName: Option[String], serverless: Boolean): SparkSession = {
+    val builder = if (serverless) {
+      println("Running in serverless mode, using default SparkSession builder")
+      SparkSession
+      .builder()
+    } else {
+      val baseBuilder = SparkSession
+        .builder()
+        .config("spark.databricks.unityCatalogOnlyMode", "True")
+      optCatalogName match {
+        case Some(catalog) => 
+          println(s"Running in cluster mode, setting initial catalog to $catalog") 
+          baseBuilder.config("spark.databricks.sql.initial.catalog.namespace", catalog)
+        case None => 
+          println("Running in cluster mode, no initial catalog provided")
+          baseBuilder  
+      }
+    }
+    builder.getOrCreate()
   }
 }
